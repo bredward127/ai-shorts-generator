@@ -313,6 +313,40 @@ def api_library_fetch():
     return jsonify({"job": _spawn(job)})
 
 
+_VIDEO_EXTS = (".mp4", ".mov", ".m4v", ".webm", ".avi", ".mkv")
+
+
+@app.post("/api/library/upload")
+def api_library_upload():
+    """Add your own footage (e.g. a first-person clip you filmed) to the clip
+    library, so it's usable as B-roll for any scene — auto-matched or hand-picked
+    in Create's footage step — without editing anything yourself."""
+    import tempfile
+
+    f = request.files.get("file")
+    if not f or not f.filename.lower().endswith(_VIDEO_EXTS):
+        return jsonify({"error": "a video file is required (.mp4/.mov/.m4v/.webm/.avi/.mkv)"}), 400
+    description = (request.form.get("description") or "").strip()
+    if not description:
+        return jsonify({"error": "a short description is required (used for matching)"}), 400
+    group = (request.form.get("group") or "mine").strip() or "mine"
+
+    tmp_dir = Path(tempfile.mkdtemp())
+    src = tmp_dir / Path(f.filename).name
+    f.save(src)
+
+    def job(set_stage):
+        from pipeline.upload import add_upload
+        try:
+            set_stage("processing your footage")
+            add_upload(src, description, group)
+        finally:
+            import shutil
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    return jsonify({"job": _spawn(job)})
+
+
 @app.post("/api/library/generate")
 def api_library_generate():
     """Add a clip by AI-generating it (Flux + Wan) — costs fal credit."""

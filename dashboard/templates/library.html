@@ -49,6 +49,17 @@
     <button class="btn ghost" onclick="genClip()">Generate</button>
     <span id="gSpin" class="hidden"><span class="spin"></span></span>
   </div>
+  <div class="f">
+    <input type="file" id="upFile" accept=".mp4,.mov,.m4v,.webm,.avi,.mkv" style="max-width:260px">
+    <input class="q" id="upDesc" type="text" placeholder="Describe this footage, e.g. 'me walking through the city at night' (affects matching)">
+    <input id="upGroup" type="text" placeholder="group (default: mine)" style="max-width:140px">
+    <button class="btn ghost" onclick="uploadClip()">Add my footage</button>
+    <span id="upSpin" class="hidden"><span class="spin"></span></span>
+  </div>
+  <div class="hint" style="color:var(--muted);font-size:12px">
+    Long clips are auto-split into ~5s segments so they can be reused as B-roll for multiple scenes.
+    Once added, use it from Create's "Pick the footage" step, or let auto-matching find it for a similar scene.
+  </div>
 </div>
 
 <div class="bar">
@@ -102,6 +113,21 @@ async function genClip(){
   const r = await fetch('/api/library/generate',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({prompt, motion:document.getElementById('gm').value})});
   pollJob((await r.json()).job, 'gSpin', 'Generate');
+}
+async function uploadClip(){
+  const file = document.getElementById('upFile').files[0];
+  const description = document.getElementById('upDesc').value.trim();
+  if(!file){ alert('Choose a video file first.'); return; }
+  if(!description){ alert('Add a short description (used for matching).'); return; }
+  document.getElementById('upSpin').classList.remove('hidden');
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('description', description);
+  fd.append('group', document.getElementById('upGroup').value.trim() || 'mine');
+  const r = await fetch('/api/library/upload', {method:'POST', body:fd});
+  const j = await r.json();
+  if(!r.ok){ document.getElementById('upSpin').classList.add('hidden'); alert('Upload failed: '+(j.error||'unknown error')); return; }
+  pollJob(j.job, 'upSpin', 'Upload');
 }
 async function delClip(btn){
   const card = btn.closest('.clip');
