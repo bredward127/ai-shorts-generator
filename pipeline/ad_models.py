@@ -29,12 +29,34 @@ class AdShot(BaseModel):
     background: str = Field(..., description="Background/surface guidance")
     props: str = Field("", description="What to include in frame, if anything")
     mistake: str = Field(..., description="The #1 mistake that ruins this exact shot")
+    motion: str = Field("", description="How to move the phone while filming this shot as a "
+                        "3-5 second video clip, e.g. 'slow push in toward the pockets' or "
+                        "'hold still, then tilt up to the screen'")
     diagram_layout: Literal["wide", "macro", "profile"] = Field(
         ..., description="Which floor-plan sketch fits this shot: 'wide' for a "
         "context/hero shot with the camera a couple feet back, 'macro' for a tight "
         "feature close-up under a foot away, 'profile' for a pure side view that "
         "shows the product's silhouette/shape."
     )
+
+
+class AdVideoScene(BaseModel):
+    index: int = Field(..., description="1-based scene order")
+    narration: str = Field(..., description="One spoken voiceover sentence for this scene")
+    shot_index: int = Field(..., description="1-based number of the shot from the shot list "
+                            "whose footage plays under this line; 0 if no shot fits")
+    visual_description: str = Field(..., description="What's on screen, as a vivid image "
+                                    "description — used to generate a fallback visual only "
+                                    "if the creator has no footage for this scene")
+
+
+class AdVideoScript(BaseModel):
+    scenes: List[AdVideoScene] = Field(..., min_length=4, max_length=6)
+    youtube_title: str
+    youtube_description: str
+    tiktok_caption: str
+    x_caption: str
+    hashtags: List[str]
 
 
 class AdPlan(BaseModel):

@@ -24,14 +24,37 @@ def _normalize_segment(src: Path, dst: Path, start: float) -> None:
          "-c:v", "libx264", "-preset", "medium", "-crf", "20", str(dst)])
 
 
-def add_upload(src: Path, description: str, group: str = "mine") -> list[str]:
+def add_still(src: Path, description: str, group: str = "mine", cid: str | None = None) -> str:
+    """Turn a photo into a short, gently zooming library clip so it can sit in a
+    scene like any video B-roll. Returns the clip id."""
+    cid = cid or f"mine_{slugify(src.stem)[:24]}"
+    clip = config.LIB_CLIPS / f"{cid}.mp4"
+    frames = int(config.LIB_CLIP_SECONDS * config.FPS)
+    W, H = config.WIDTH, config.HEIGHT
+    vf = (f"scale={W * 2}:{H * 2}:force_original_aspect_ratio=increase,crop={W * 2}:{H * 2},"
+          f"zoompan=z='min(zoom+0.0006,1.08)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+          f":d={frames}:s={W}x{H}:fps={config.FPS},setsar=1,format=yuv420p")
+    run(["ffmpeg", "-y", "-loop", "1", "-i", str(src), "-vf", vf, "-frames:v", str(frames),
+         "-c:v", "libx264", "-preset", "medium", "-crf", "20", str(clip)])
+    libimg = config.LIB_IMAGES / f"{cid}.jpg"
+    run(["ffmpeg", "-y", "-i", str(src), "-frames:v", "1", str(libimg)])
+    row = {"id": cid, "group": group, "lighting": "", "style": "personal",
+           "description": description, "image_prompt": description, "motion_prompt": ""}
+    library.add_clip(row, libimg, clip, ffprobe_duration(clip),
+                     library.embed(f"{description} ({group})"))
+    log(f"  {cid} added (photo -> {config.LIB_CLIP_SECONDS:.0f}s zoom clip)")
+    return cid
+
+
+def add_upload(src: Path, description: str, group: str = "mine",
+               base: str | None = None) -> list[str]:
     """Split `src` into one or more clips and add each to the library. Returns
     the new clip ids."""
     step(f"Adding your footage: {src.name}")
     total = ffprobe_duration(src)
     seg_len = config.LIB_CLIP_SECONDS
     n_segments = min(MAX_SEGMENTS, max(1, int(total // seg_len))) if total > seg_len + 1 else 1
-    base = f"mine_{slugify(src.stem)[:24]}"
+    base = base or f"mine_{slugify(src.stem)[:24]}"
     embedding = library.embed(f"{description} ({group})")
 
     ids: list[str] = []

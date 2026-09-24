@@ -145,9 +145,21 @@ def ad_detail(slug: str):
     photos = sorted(f.name for f in photos_dir.iterdir()) if photos_dir.exists() else []
     diagrams_dir = config.ADS_DIR / slug / "diagrams"
     diagrams = sorted(f.name for f in diagrams_dir.iterdir()) if diagrams_dir.exists() else []
+    photos = [p for p in photos if not p.startswith("_")]
     has_final = (config.ADS_DIR / slug / "final.png").exists()
-    return render_template("ad_detail.html", brand=config.BRAND, plan=plan, photos=photos,
-                           diagrams=diagrams, has_final=has_final)
+    mm = ads.media_map(slug)
+    media = [{"name": p, "shot": mm.get(p, 0),
+              "is_video": Path(p).suffix.lower() in ads.VIDEO_EXTS} for p in photos]
+    video_ids = [v["id"] for v in _videos() if v["id"].endswith(f"-{slug[:40]}-ad")]
+    return render_template("ad_detail.html", brand=config.BRAND, plan=plan, media=media,
+                           diagrams=diagrams, has_final=has_final,
+                           voice=voice_status(), video_id=video_ids[0] if video_ids else None)
+
+
+def voice_status() -> str:
+    from pipeline.voice import _ready
+    return {"fal": "your cloned voice (fal.ai)", "elevenlabs": "your cloned voice (ElevenLabs)",
+            "openai": f"OpenAI stock voice '{config.TTS_VOICE}'"}.get(_ready(), "")
 
 
 # ---------- settings API ----------
@@ -511,16 +523,48 @@ def api_ads_upload_composite():
 
 @app.post("/api/ads/upload-photo")
 def api_ads_upload_photo():
-    """Upload one real photo (taken from the shot list) for a given ad."""
+    """Upload one photo or short video clip (shot from the shot list) for an ad,
+    optionally tagged with the shot number it's for."""
     slug = (request.form.get("slug") or "").strip()
     f = request.files.get("file")
-    if not slug or not f or not f.filename.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-        return jsonify({"error": "slug and an image file are required"}), 400
+    if not slug or not f or not f.filename.lower().endswith(ads.PHOTO_EXTS + ads.VIDEO_EXTS):
+        return jsonify({"error": "slug and a photo or video file are required"}), 400
     dest_dir = config.ADS_DIR / slug / "photos"
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / Path(f.filename).name
     f.save(dest)
-    return jsonify({"ok": True, "name": dest.name})
+    shot = int(request.form.get("shot") or 0)
+    ads.assign_media(slug, dest.name, shot)
+    return jsonify({"ok": True, "name": dest.name, "shot": shot,
+                    "is_video": dest.suffix.lower() in ads.VIDEO_EXTS})
+
+
+@app.post("/api/ads/assign")
+def api_ads_assign():
+    data = request.get_json(force=True)
+    slug, name = (data.get("slug") or "").strip(), Path(data.get("name") or "").name
+    if not slug or not name or not (config.ADS_DIR / slug / "photos" / name).exists():
+        return jsonify({"error": "unknown file"}), 404
+    ads.assign_media(slug, name, int(data.get("shot") or 0))
+    return jsonify({"ok": True})
+
+
+@app.post("/api/ads/make-video")
+def api_ads_make_video():
+    """Script → your footage per scene → cloned-voice narration → captions →
+    music → final.mp4 (lands on the Videos tab like any other short)."""
+    slug = ((request.get_json(force=True) or {}).get("slug") or "").strip()
+    plan = ads.load_plan(slug)
+    if not plan:
+        return jsonify({"error": "ad not found"}), 404
+    if not any(ads.media_map(slug).values()):
+        return jsonify({"error": "tag at least one photo/clip with the shot it's for first"}), 400
+
+    def job(set_stage):
+        vid = ads.make_video(plan, on_stage=lambda s: set_stage(s))
+        set_stage("done", vid=vid)
+
+    return jsonify({"job": _spawn(job)})
 
 
 @app.post("/api/ads/assemble")
@@ -533,6 +577,8 @@ def api_ads_assemble():
     plan = ads.load_plan(slug)
     if not plan:
         return jsonify({"error": "ad not found"}), 404
+    if any(Path(n).suffix.lower() in ads.VIDEO_EXTS for n in filenames):
+        return jsonify({"error": "the still ad uses photos only — use 'Make video ad' for clips"}), 400
     paths = [config.ADS_DIR / slug / "photos" / n for n in filenames]
     missing = [n for n, p in zip(filenames, paths) if not p.exists()]
     if missing:

@@ -4,6 +4,9 @@
 <style>
   .panel{background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px;margin-bottom:22px}
   h2{font-family:'Sora';font-size:20px;margin-bottom:10px}
+  .stepnum{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#1a1205;
+    font-weight:800;font-size:13px;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
   .hook{font-family:'Sora';font-size:24px;font-weight:800;margin-bottom:6px}
   .problem{color:var(--muted);margin-bottom:16px}
   .fb{display:flex;gap:10px;margin-bottom:8px;font-size:14px}
@@ -14,27 +17,36 @@
   .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
   .shot{background:#0c1118;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
   .shot img{width:100%;display:block}
-  .shot .meta{padding:12px 14px;font-size:13px;color:var(--muted)}
+  .shot .meta{padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.5}
   .shot .name{color:var(--text);font-weight:700;margin-bottom:4px}
-  .dropzone{border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:20px;text-align:center;
-    color:var(--muted);cursor:pointer;margin-bottom:14px}
-  .photogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-  .photocell{position:relative;border-radius:10px;overflow:hidden;border:2px solid transparent;cursor:pointer}
-  .photocell img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-  .photocell.sel{border-color:var(--accent)}
-  .photocell .order{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;
+  .dropzone{border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:18px;text-align:center;
+    color:var(--muted);cursor:pointer;margin-bottom:12px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  select{background:#0c1118;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:var(--text);padding:9px 11px;font-size:13px;font-family:inherit}
+  .mediagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:14px 0}
+  .mcell{background:#0c1118;border:2px solid transparent;border-radius:10px;overflow:hidden}
+  .mcell.sel{border-color:var(--accent)}
+  .mcell .thumb{position:relative;cursor:pointer}
+  .mcell img,.mcell video{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#000}
+  .mcell .order{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;
     background:var(--accent);color:#1a1205;font-weight:800;font-size:12px;display:none;align-items:center;justify-content:center}
-  .photocell.sel .order{display:flex}
+  .mcell.sel .order{display:flex}
+  .mcell .kind{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;
+    font-weight:700;padding:2px 7px;border-radius:999px}
+  .mcell select{width:100%;border:none;border-top:1px solid rgba(255,255,255,.08);border-radius:0;font-size:12px}
   .spin{display:inline-block;width:16px;height:16px;border:3px solid rgba(255,255,255,.2);
     border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle}
   @keyframes s{to{transform:rotate(360deg)}}
   .hidden{display:none}
   .status{font-size:13px;margin-top:12px}
   .status.err{color:#f87171}
+  .voice{font-size:13px;padding:10px 14px;border-radius:10px;background:#0c1118;border:1px solid rgba(255,255,255,.1);margin-bottom:14px}
+  .voice a{color:var(--accent);text-decoration:underline}
   .final img{width:100%;max-width:420px;border-radius:14px;display:block}
 </style>
 
 <div class="panel">
+  <h2><span class="stepnum">1</span>The message</h2>
   <div class="hook">{{ plan.brief.hook }}</div>
   <div class="problem">{{ plan.brief.problem }}</div>
   {% for fb in plan.brief.features %}
@@ -44,12 +56,13 @@
   <div class="cta-line">CTA: {{ plan.brief.cta }}</div>
 </div>
 
-<h2>Shot list &amp; setup diagrams</h2>
+<h2><span class="stepnum">2</span>What to shoot</h2>
+<p class="sub">For each shot, take a photo <strong>and</strong> a 3-5 second video clip doing the camera move listed. Clips become the moving B-roll in the video ad; photos work for both the video (as a slow zoom) and the still ad.</p>
 <div class="shots" style="margin-bottom:22px">
   {% for shot in plan.shots %}
   <div class="shot">
     {% if diagrams|length > loop.index0 %}
-    <img src="/media/ads/{{ plan.slug }}/diagrams/{{ diagrams[loop.index0] }}" alt="{{ shot.name }} diagram">
+    <img src="/media/ads/{{ plan.slug }}/diagrams/{{ diagrams[loop.index0] }}" alt="{{ shot.name }} setup diagram">
     {% endif %}
     <div class="meta">
       <div class="name">Shot {{ loop.index }} — {{ shot.name }}</div>
@@ -59,6 +72,7 @@
       <div><strong>Lighting:</strong> {{ shot.lighting }}</div>
       <div><strong>Background:</strong> {{ shot.background }}</div>
       {% if shot.props %}<div><strong>Props:</strong> {{ shot.props }}</div>{% endif %}
+      {% if shot.motion %}<div><strong>Video clip move:</strong> {{ shot.motion }}</div>{% endif %}
       <div><strong>Watch out:</strong> {{ shot.mistake }}</div>
     </div>
   </div>
@@ -66,77 +80,125 @@
 </div>
 
 <div class="panel">
-  <h2>Your photos</h2>
-  <div class="sub" style="color:var(--muted);font-size:13px;margin-bottom:14px">
-    Upload the photos you took from the shot list above. Got one composite/collage photo instead
-    (several shots in one grid image)? Upload it below and it'll be split into individual crops automatically.
+  <h2><span class="stepnum">3</span>Upload your footage</h2>
+  <p class="sub">Tag every photo/clip with the shot it's for — that's how the video ad knows which footage to play under each line of the voiceover.</p>
+  <div class="row">
+    <span style="font-size:13px;color:var(--muted)">Uploading footage for:</span>
+    <select id="uploadShot">
+      {% for shot in plan.shots %}<option value="{{ loop.index }}">Shot {{ loop.index }} — {{ shot.name }}</option>{% endfor %}
+      <option value="0">Not sure / extra</option>
+    </select>
   </div>
   <div class="dropzone" id="dropzone">
-    Drop photo(s) here, or click to choose files
-    <input type="file" id="photoFiles" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none">
+    Drop photos or video clips here, or click to choose
+    <input type="file" id="mediaFiles" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.m4v,.webm" multiple style="display:none">
   </div>
-  <div class="dropzone" id="compositeZone" style="padding:14px;font-size:13px">
-    Or: upload a single composite/collage photo to auto-split into crops
+  <div class="dropzone" id="compositeZone" style="padding:12px;font-size:13px">
+    Or: one composite/collage photo (several shots in a grid) — auto-split into separate photos
     <input type="file" id="compositeFile" accept=".jpg,.jpeg,.png,.webp" style="display:none">
   </div>
+  <span id="upSpin" class="hidden"><span class="spin"></span> uploading…</span>
 
-  <div class="photogrid" id="photogrid">
-    {% for p in photos %}
-    <div class="photocell" data-name="{{ p }}" onclick="toggleSelect(this)">
-      <img src="/media/ads/{{ plan.slug }}/photos/{{ p }}">
-      <div class="order"></div>
+  <div class="mediagrid" id="mediagrid">
+    {% for m in media %}
+    <div class="mcell" data-name="{{ m.name }}" data-video="{{ 1 if m.is_video else 0 }}">
+      <div class="thumb" onclick="toggleSelect(this.parentElement)">
+        {% if m.is_video %}
+        <video src="/media/ads/{{ plan.slug }}/photos/{{ m.name }}" muted loop playsinline preload="metadata"
+               onmouseenter="this.play()" onmouseleave="this.pause()"></video>
+        <span class="kind">CLIP</span>
+        {% else %}
+        <img src="/media/ads/{{ plan.slug }}/photos/{{ m.name }}" alt="">
+        <span class="kind">PHOTO</span>
+        {% endif %}
+        <div class="order"></div>
+      </div>
+      <select onchange="assign('{{ m.name }}', this.value)" aria-label="Which shot is this?">
+        {% for shot in plan.shots %}<option value="{{ loop.index }}" {% if m.shot == loop.index %}selected{% endif %}>Shot {{ loop.index }}</option>{% endfor %}
+        <option value="0" {% if not m.shot %}selected{% endif %}>Untagged</option>
+      </select>
     </div>
     {% endfor %}
   </div>
-  <div class="hint" style="color:var(--muted);font-size:12px;margin-bottom:14px">
-    Click photos in the order you want them in the ad (first click = hero image). Pick 1-3.
-  </div>
+</div>
 
-  <button class="btn" id="assembleBtn" type="button">Assemble the ad</button>
+<div class="panel">
+  <h2><span class="stepnum">4</span>Make the video ad</h2>
+  <p class="sub">
+    Claude writes a short (~20 second) voiceover from the message above and pins each line to a shot. Your tagged
+    footage plays under its lines as B-roll, the narration is voiced, word-by-word captions are burned in,
+    and a music bed from <code>assets/music</code> is ducked underneath. Lines with no footage fall back to
+    your clip library or AI visuals.
+  </p>
+  <div class="voice">
+    {% if voice %}Voiceover will use: <strong>{{ voice }}</strong> · <a href="/settings">change in Settings</a>
+    {% else %}No voice is set up — the video will be silent. <a href="/settings">Clone your voice or add a key in Settings</a> first.{% endif %}
+  </div>
+  <button class="btn" id="videoBtn" type="button">Make video ad</button>
+  <span id="videoSpin" class="hidden"><span class="spin"></span> <span id="videoStage">starting…</span></span>
+  <div class="status" id="videoStatus"></div>
+  {% if video_id %}
+  <div style="margin-top:16px">
+    <video controls playsinline src="/media/{{ video_id }}/final.mp4" style="width:280px;aspect-ratio:9/16;border-radius:14px;background:#000"></video>
+    <div style="margin-top:10px"><a class="btn ghost" href="/v/{{ video_id }}">Open in review (swap music, copy captions, download) →</a></div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2><span class="stepnum">5</span>Still ad (optional)</h2>
+  <p class="sub">For a feed image post: click 1-3 <strong>photos</strong> above in order (first = hero), then assemble.</p>
+  <button class="btn ghost" id="assembleBtn" type="button">Assemble still ad</button>
   <span id="assembleSpin" class="hidden"><span class="spin"></span> rendering…</span>
   <div class="status" id="assembleStatus"></div>
+  {% if has_final %}
+  <div class="final" style="margin-top:16px">
+    <img src="/media/ads/{{ plan.slug }}/final.png?t={{ range(1,999999)|random }}" alt="Final still ad">
+    <div style="margin-top:12px"><a class="btn" href="/media/ads/{{ plan.slug }}/final.png" download>Download PNG</a></div>
+  </div>
+  {% endif %}
 </div>
-
-{% if has_final %}
-<div class="panel final">
-  <h2>Final ad</h2>
-  <img id="finalImg" src="/media/ads/{{ plan.slug }}/final.png?t={{ range(1,999999)|random }}">
-  <div style="margin-top:14px"><a class="btn" href="/media/ads/{{ plan.slug }}/final.png" download>Download PNG</a></div>
-</div>
-{% endif %}
 
 <script>
 const slug = {{ plan.slug|tojson }};
+const shotCount = {{ plan.shots|length }};
 let selected = [];
 
-function toggleSelect(el) {
-  const name = el.dataset.name;
-  const i = selected.indexOf(name);
-  if (i >= 0) { selected.splice(i, 1); el.classList.remove('sel'); el.querySelector('.order').textContent = ''; }
-  else if (selected.length < 3) { selected.push(name); el.classList.add('sel'); el.querySelector('.order').textContent = selected.length; }
-  document.querySelectorAll('.photocell.sel').forEach(c => {
-    c.querySelector('.order').textContent = selected.indexOf(c.dataset.name) + 1;
+function renumber() {
+  document.querySelectorAll('.mcell').forEach(c => {
+    const i = selected.indexOf(c.dataset.name);
+    c.classList.toggle('sel', i >= 0);
+    c.querySelector('.order').textContent = i >= 0 ? i + 1 : '';
   });
 }
-
-function addPhotoCell(name) {
-  const grid = document.getElementById('photogrid');
-  const div = document.createElement('div');
-  div.className = 'photocell'; div.dataset.name = name;
-  div.onclick = () => toggleSelect(div);
-  div.innerHTML = `<img src="/media/ads/${slug}/photos/${name}"><div class="order"></div>`;
-  grid.appendChild(div);
+function toggleSelect(cell) {
+  if (cell.dataset.video === '1') return;  // still ad = photos only
+  const i = selected.indexOf(cell.dataset.name);
+  if (i >= 0) selected.splice(i, 1); else if (selected.length < 3) selected.push(cell.dataset.name);
+  renumber();
+}
+async function assign(name, shot) {
+  await fetch('/api/ads/assign', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slug, name, shot: +shot})});
 }
 
-document.getElementById('dropzone').addEventListener('click', () => document.getElementById('photoFiles').click());
-document.getElementById('photoFiles').addEventListener('change', async (e) => {
-  for (const file of e.target.files) {
-    const fd = new FormData(); fd.append('slug', slug); fd.append('file', file);
+async function uploadFiles(files) {
+  const shot = document.getElementById('uploadShot').value;
+  document.getElementById('upSpin').classList.remove('hidden');
+  for (const file of files) {
+    const fd = new FormData(); fd.append('slug', slug); fd.append('shot', shot); fd.append('file', file);
     const r = await fetch('/api/ads/upload-photo', {method: 'POST', body: fd});
-    const j = await r.json();
-    if (r.ok) addPhotoCell(j.name);
+    if (!r.ok) { const j = await r.json(); alert('Upload failed: ' + (j.error || file.name)); }
   }
-});
+  location.reload();
+}
+const dz = document.getElementById('dropzone');
+dz.addEventListener('click', () => document.getElementById('mediaFiles').click());
+document.getElementById('mediaFiles').addEventListener('change', e => uploadFiles(e.target.files));
+['dragover','drop'].forEach(ev => dz.addEventListener(ev, e => {
+  e.preventDefault();
+  if (ev === 'drop' && e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+}));
 
 document.getElementById('compositeZone').addEventListener('click', () => document.getElementById('compositeFile').click());
 document.getElementById('compositeFile').addEventListener('change', async (e) => {
@@ -145,32 +207,43 @@ document.getElementById('compositeFile').addEventListener('change', async (e) =>
   const fd = new FormData(); fd.append('slug', slug); fd.append('file', file);
   const r = await fetch('/api/ads/upload-composite', {method: 'POST', body: fd});
   const j = await r.json();
-  if (r.ok) { j.files.forEach(addPhotoCell); }
-  else alert('Split failed: ' + (j.error || 'unknown error'));
+  if (r.ok) location.reload(); else alert('Split failed: ' + (j.error || 'unknown error'));
+});
+
+function poll(job, onDone, spinId, statusId, stageId) {
+  fetch('/api/job/' + job).then(r => r.json()).then(j => {
+    if (stageId && j.stage) document.getElementById(stageId).textContent = j.stage + '…';
+    if (j.stage === 'done') { onDone(j); return; }
+    if (j.stage === 'error') {
+      document.getElementById(spinId).classList.add('hidden');
+      const s = document.getElementById(statusId); s.textContent = 'Failed: ' + j.error; s.className = 'status err';
+      return;
+    }
+    setTimeout(() => poll(job, onDone, spinId, statusId, stageId), 2000);
+  });
+}
+
+document.getElementById('videoBtn').addEventListener('click', async () => {
+  const status = document.getElementById('videoStatus');
+  status.textContent = ''; status.className = 'status';
+  document.getElementById('videoSpin').classList.remove('hidden');
+  const r = await fetch('/api/ads/make-video', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slug})});
+  const j = await r.json();
+  if (!r.ok) { document.getElementById('videoSpin').classList.add('hidden'); status.textContent = j.error; status.className = 'status err'; return; }
+  poll(j.job, () => location.reload(), 'videoSpin', 'videoStatus', 'videoStage');
 });
 
 document.getElementById('assembleBtn').addEventListener('click', async () => {
   const status = document.getElementById('assembleStatus');
-  if (!selected.length) { status.textContent = 'Select at least one photo above.'; status.className = 'status err'; return; }
+  if (!selected.length) { status.textContent = 'Click 1-3 photos above first.'; status.className = 'status err'; return; }
   document.getElementById('assembleSpin').classList.remove('hidden');
   status.textContent = '';
   const r = await fetch('/api/ads/assemble', {method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({slug, images: selected, platform: '4:5'})});
   const j = await r.json();
   if (!r.ok) { document.getElementById('assembleSpin').classList.add('hidden'); status.textContent = j.error; status.className = 'status err'; return; }
-  pollAssembleJob(j.job);
+  poll(j.job, () => location.reload(), 'assembleSpin', 'assembleStatus');
 });
-async function pollAssembleJob(job) {
-  const r = await fetch('/api/job/' + job);
-  const j = await r.json();
-  if (j.stage === 'done') { location.reload(); return; }
-  if (j.stage === 'error') {
-    document.getElementById('assembleSpin').classList.add('hidden');
-    const status = document.getElementById('assembleStatus');
-    status.textContent = 'Failed: ' + j.error; status.className = 'status err';
-    return;
-  }
-  setTimeout(() => pollAssembleJob(job), 1500);
-}
 </script>
 {% endblock %}

@@ -113,16 +113,31 @@ app. To stop it on purpose, click into the terminal window and press
 Separate from the video pipeline, this dashboard also has an **Ads** tab that
 writes ad copy and a photo shot list for anything you want to sell:
 
-1. Add your **Anthropic API key** in Settings (Script writer section) — the ad
-   planner uses Claude to write the messaging brief and shot list.
-2. Click **Ads** in the nav bar, describe the product, pick an audience and
-   platform, click **Plan the ad**. You'll get a messaging brief and 2-4 shots,
-   each with a labeled diagram showing camera angle, framing, and lighting —
-   made for someone who isn't a photographer.
-3. Take the photos it asks for (or upload one composite/collage photo and it's
-   split into individual shots automatically), upload them on the ad's page,
-   pick 1-3 in order (first = hero image), click **Assemble the ad**.
-4. Download the finished ad PNG.
+**One-time setup (Settings page):**
+- **Anthropic API key** — Claude writes the message, shot list, and voiceover.
+- **fal.ai key** + **clone your voice** (Voiceover section) — so the ad is
+  narrated in your voice. Also used for AI visuals on any line you have no
+  footage for.
+- Optional: drop a music track (.mp3) into `assets\music` for a music bed.
+
+**Every ad:**
+1. **Plan** — click **Ads**, describe the product, pick audience + platform,
+   click **Plan the ad**. You get the message (hook, problem, benefits, CTA)
+   and 2-4 shots, each with a diagram of where to stand, how to frame it,
+   where the light should come from, and the camera move for a video clip.
+2. **Shoot** — for each shot, take a photo *and* a 3-5 second phone video doing
+   the listed camera move. You can also film yourself (first-person, talking,
+   using the product) — tag it to whichever shot it fits.
+3. **Upload & tag** — on the ad's page, pick which shot you're uploading for,
+   drop your files in. Each photo/clip has a shot dropdown you can change later.
+4. **Make video ad** — Claude writes a ~20s voiceover from the message and
+   pins each line to a shot. Your clips play under their lines as B-roll
+   (photos get a slow zoom), your cloned voice reads it, word-by-word captions
+   are burned in, and music is ducked underneath. The finished MP4 shows up on
+   the ad page and the **Videos** tab, where you can swap music and copy
+   captions/hashtags for posting.
+5. **Still ad (optional)** — click 1-3 photos in order, **Assemble still ad**,
+   download the PNG for a feed image post.
 
 ## Coming back later
 
