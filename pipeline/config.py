@@ -115,10 +115,18 @@ PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "") # free at pixabay.com/api
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
 CLAUDE_SCRIPT_MODEL = os.getenv("CLAUDE_SCRIPT_MODEL", "claude-sonnet-5")
 
-# Voiceover: "openai" (stock TTS voices) or "elevenlabs" (supports voice cloning).
+# Voiceover: "openai" (stock TTS voices), "fal" (zero-shot voice cloning via
+# fal.ai — reuses FAL_KEY, no separate account needed), or "elevenlabs"
+# (also voice cloning, needs its own account/key).
 TTS_PROVIDER = os.getenv("TTS_PROVIDER", "openai").strip().lower()
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
 ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+
+# fal.ai voice cloning: drop a reference sample from the dashboard's Settings
+# page and it's uploaded to fal once; FAL_VOICE_REF_URL is that hosted URL,
+# reused (with the text) on every narration line — no per-voice "training" step.
+FAL_TTS_MODEL = os.getenv("FAL_TTS_MODEL", "fal-ai/chatterbox/text-to-speech")
+FAL_VOICE_REF_URL = os.getenv("FAL_VOICE_REF_URL", "")
 
 # Length each library clip is trimmed to (stitch-time stretches to the scene).
 LIB_CLIP_SECONDS = 5.0

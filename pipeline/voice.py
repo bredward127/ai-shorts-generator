@@ -65,6 +65,36 @@ def _tts_clip_elevenlabs(text: str, out: Path) -> float:
     return ffprobe_duration(out)
 
 
+def _tts_clip_fal(text: str, out: Path) -> float:
+    """Narrate with a cloned voice via fal.ai (zero-shot: the reference sample is
+    passed on every call, no separate training step). Set FAL_VOICE_REF_URL from
+    the dashboard's Settings page (clone-a-voice) or in .env."""
+    import fal_client
+    import requests
+
+    raw = out.with_name(out.stem + "_raw.mp3")
+    result = fal_client.subscribe(
+        config.FAL_TTS_MODEL,
+        arguments={"text": text, "audio_url": config.FAL_VOICE_REF_URL},
+    )
+    url = result.get("audio", {}).get("url") or result.get("audio_url") or result["audio"]["url"]
+    raw.write_bytes(requests.get(url, timeout=120).content)
+    _apply_tempo(raw, out)
+    return ffprobe_duration(out)
+
+
+def clone_voice_fal(sample_path: Path) -> str:
+    """Upload a reference sample to fal's CDN and return its URL, to reuse as
+    FAL_VOICE_REF_URL on every narration line. Used by the dashboard's "clone my
+    voice" upload when the fal.ai option is picked — reuses the existing FAL_KEY,
+    no separate account needed."""
+    import fal_client
+
+    if not config.FAL_KEY:
+        raise RuntimeError("FAL_KEY not set")
+    return fal_client.upload_file(str(sample_path))
+
+
 def clone_voice(name: str, sample_paths: list[Path]) -> str:
     """Upload one or more audio samples to ElevenLabs and return the new voice_id.
     Used by the dashboard's "clone my voice" upload."""
@@ -89,7 +119,9 @@ def clone_voice(name: str, sample_paths: list[Path]) -> str:
 
 
 def _ready() -> str:
-    """Which narration path is usable right now: 'openai' | 'elevenlabs' | ''."""
+    """Which narration path is usable right now: 'openai' | 'fal' | 'elevenlabs' | ''."""
+    if config.TTS_PROVIDER == "fal" and config.FAL_KEY and config.FAL_VOICE_REF_URL:
+        return "fal"
     if config.TTS_PROVIDER == "elevenlabs" and config.ELEVENLABS_API_KEY and config.ELEVENLABS_VOICE_ID:
         return "elevenlabs"
     if config.OPENAI_API_KEY:
@@ -112,7 +144,9 @@ def synthesize(audio_dir: Path, script: Script) -> list[dict]:
         out = audio_dir / f"scene_{scene.index:02d}.mp3"
         text = scene.narration.strip()
         if not out.exists():
-            if provider == "elevenlabs":
+            if provider == "fal":
+                dur = _tts_clip_fal(text, out)
+            elif provider == "elevenlabs":
                 dur = _tts_clip_elevenlabs(text, out)
             elif provider == "openai":
                 dur = _tts_clip_openai(client, text, out)

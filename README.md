@@ -25,7 +25,7 @@ It works **two ways**, and you can mix them per video:
 - **Topic → finished video**, end to end, in one command.
 - **Two visual modes:** AI generation (fal Flux + Wan) and/or free stock footage (Pexels/Pixabay).
 - **Reusable clip library** with semantic matching — reuse a good shot across videos instead of paying to regenerate it.
-- **AI voiceover** (OpenAI `gpt-4o-mini-tts`, or ElevenLabs with your own cloned voice) with a tunable, punchy delivery.
+- **AI voiceover** (OpenAI `gpt-4o-mini-tts`, or clone your own voice via fal.ai/ElevenLabs) with a tunable, punchy delivery.
 - **Script writer: OpenAI or Claude** — pick either from the dashboard's Settings page.
 - **In-dashboard Settings page** — add/rotate all API keys from a form, no `.env` editing needed.
 - **Word-by-word karaoke captions** auto-aligned with `faster-whisper`.

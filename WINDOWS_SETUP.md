@@ -93,10 +93,9 @@ app. To stop it on purpose, click into the terminal window and press
    - **Pexels key** (for free stock footage).
 3. For voice: either pick an **OpenAI voice** from the dropdown (needs an
    OpenAI key), or scroll to **"Clone your own voice"** — drop in a clear
-   1–5 minute audio recording, give it a name, click **Clone voice**. This
-   needs an ElevenLabs API key (free tier available at
-   https://elevenlabs.io) pasted into the **ElevenLabs API key** field above
-   it first.
+   10–30 second audio recording, leave the dropdown on **"via fal.ai"**
+   (this reuses the fal key you already pasted in above — no extra
+   account needed), give it a name, and click **Clone voice**.
 4. Click **Save settings** at the bottom. That's it — no `.env` file to
    open or edit by hand. (Behind the scenes it writes one for you in the
    project folder, but you never need to touch it.)

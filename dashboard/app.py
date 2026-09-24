@@ -140,18 +140,15 @@ def api_settings():
 
 @app.post("/api/voice/clone")
 def api_voice_clone():
-    """Upload one or more short audio samples of a voice; ElevenLabs clones it
-    and we save the resulting voice_id + switch TTS_PROVIDER to elevenlabs."""
+    """Upload one or more short audio samples of a voice and clone it via either
+    fal.ai (reuses the existing FAL_KEY, no separate account) or ElevenLabs."""
     import tempfile
 
+    provider = (request.form.get("provider") or "fal").strip().lower()
     name = (request.form.get("name") or "My Voice").strip()
     files = request.files.getlist("files")
     if not files:
         return jsonify({"error": "at least one audio sample required"}), 400
-    if not config.ELEVENLABS_API_KEY:
-        return jsonify({"error": "add your ElevenLabs API key in Settings first"}), 400
-
-    from pipeline.voice import clone_voice
 
     with tempfile.TemporaryDirectory() as tmp:
         paths = []
@@ -163,13 +160,27 @@ def api_voice_clone():
             paths.append(p)
         if not paths:
             return jsonify({"error": "audio file required (.mp3/.wav/.m4a/.ogg/.flac)"}), 400
+
+        if provider == "fal":
+            if not config.FAL_KEY:
+                return jsonify({"error": "add your fal.ai API key in Settings first"}), 400
+            from pipeline.voice import clone_voice_fal
+            try:
+                ref_url = clone_voice_fal(paths[0])
+            except Exception as e:  # noqa: BLE001
+                return jsonify({"error": str(e)}), 400
+            settings.save({"FAL_VOICE_REF_URL": ref_url, "TTS_PROVIDER": "fal"})
+            return jsonify({"ok": True, "ref_url": ref_url})
+
+        if not config.ELEVENLABS_API_KEY:
+            return jsonify({"error": "add your ElevenLabs API key in Settings first"}), 400
+        from pipeline.voice import clone_voice
         try:
             voice_id = clone_voice(name, paths)
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": str(e)}), 400
-
-    settings.save({"ELEVENLABS_VOICE_ID": voice_id, "TTS_PROVIDER": "elevenlabs"})
-    return jsonify({"ok": True, "voice_id": voice_id})
+        settings.save({"ELEVENLABS_VOICE_ID": voice_id, "TTS_PROVIDER": "elevenlabs"})
+        return jsonify({"ok": True, "voice_id": voice_id})
 
 
 # ---------- media ----------
