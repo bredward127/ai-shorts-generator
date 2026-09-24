@@ -14,7 +14,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
-from pipeline import config, drafts, library, scriptgen, settings, state
+from pipeline import ads, config, drafts, library, scriptgen, settings, state
 from pipeline.util import read_json, slugify
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -129,6 +129,25 @@ def create_page():
 @app.route("/settings")
 def settings_page():
     return render_template("settings.html", brand=config.BRAND, values=settings.current())
+
+
+@app.route("/ads")
+def ads_page():
+    return render_template("ads.html", brand=config.BRAND, ads=ads.list_ads())
+
+
+@app.route("/ads/<slug>")
+def ad_detail(slug: str):
+    plan = ads.load_plan(slug)
+    if not plan:
+        abort(404)
+    photos_dir = config.ADS_DIR / slug / "photos"
+    photos = sorted(f.name for f in photos_dir.iterdir()) if photos_dir.exists() else []
+    diagrams_dir = config.ADS_DIR / slug / "diagrams"
+    diagrams = sorted(f.name for f in diagrams_dir.iterdir()) if diagrams_dir.exists() else []
+    has_final = (config.ADS_DIR / slug / "final.png").exists()
+    return render_template("ad_detail.html", brand=config.BRAND, plan=plan, photos=photos,
+                           diagrams=diagrams, has_final=has_final)
 
 
 # ---------- settings API ----------
@@ -450,6 +469,101 @@ def api_upload_music():
     dest = config.MUSIC_DIR / Path(f.filename).name
     f.save(dest)
     return jsonify({"ok": True, "name": dest.name})
+
+
+# ---------- ad planner ----------
+@app.post("/api/ads/plan")
+def api_ads_plan():
+    data = request.get_json(force=True)
+    description = (data.get("description") or "").strip()
+    audience = (data.get("audience") or "").strip() or "general shoppers"
+    platform = (data.get("platform") or "Instagram/Facebook feed (4:5)").strip()
+    if not description:
+        return jsonify({"error": "describe the product first"}), 400
+
+    def job(set_stage):
+        set_stage("writing brief + shot list")
+        plan = ads.plan(description, audience, platform)
+        set_stage("rendering shot diagrams")
+        ads.render_all_diagrams(plan)
+        set_stage("done", slug=plan.slug)
+
+    return jsonify({"job": _spawn(job)})
+
+
+@app.post("/api/ads/upload-composite")
+def api_ads_upload_composite():
+    """Upload a single collage/composite photo (e.g. a listing image with several
+    shots in a grid) for a given ad; splits it into individual crops."""
+    slug = (request.form.get("slug") or "").strip()
+    f = request.files.get("file")
+    if not slug or not f:
+        return jsonify({"error": "slug and file required"}), 400
+    tmp = config.ADS_DIR / slug / "photos" / "_composite_upload.png"
+    tmp.parent.mkdir(parents=True, exist_ok=True)
+    f.save(tmp)
+    try:
+        crops = ads.split_composite(tmp, slug)
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "files": [p.name for p in crops]})
+
+
+@app.post("/api/ads/upload-photo")
+def api_ads_upload_photo():
+    """Upload one real photo (taken from the shot list) for a given ad."""
+    slug = (request.form.get("slug") or "").strip()
+    f = request.files.get("file")
+    if not slug or not f or not f.filename.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+        return jsonify({"error": "slug and an image file are required"}), 400
+    dest_dir = config.ADS_DIR / slug / "photos"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / Path(f.filename).name
+    f.save(dest)
+    return jsonify({"ok": True, "name": dest.name})
+
+
+@app.post("/api/ads/assemble")
+def api_ads_assemble():
+    data = request.get_json(force=True)
+    slug = (data.get("slug") or "").strip()
+    filenames = data.get("images") or []
+    platform = (data.get("platform") or "4:5").strip()
+    accent = (data.get("accent") or ads.ACCENT).strip()
+    plan = ads.load_plan(slug)
+    if not plan:
+        return jsonify({"error": "ad not found"}), 404
+    paths = [config.ADS_DIR / slug / "photos" / n for n in filenames]
+    missing = [n for n, p in zip(filenames, paths) if not p.exists()]
+    if missing:
+        return jsonify({"error": f"missing photo(s): {', '.join(missing)}"}), 400
+    if not paths:
+        return jsonify({"error": "pick at least one photo"}), 400
+
+    def job(set_stage):
+        set_stage("rendering final ad")
+        ads.assemble(plan, paths, platform=platform, accent=accent)
+        set_stage("done")
+
+    return jsonify({"job": _spawn(job)})
+
+
+@app.get("/media/ads/<slug>/photos/<path:name>")
+def media_ad_photo(slug: str, name: str):
+    f = config.ADS_DIR / slug / "photos" / Path(name).name
+    return send_file(f, conditional=True) if f.exists() else abort(404)
+
+
+@app.get("/media/ads/<slug>/diagrams/<path:name>")
+def media_ad_diagram(slug: str, name: str):
+    f = config.ADS_DIR / slug / "diagrams" / Path(name).name
+    return send_file(f, conditional=True) if f.exists() else abort(404)
+
+
+@app.get("/media/ads/<slug>/final.png")
+def media_ad_final(slug: str):
+    f = config.ADS_DIR / slug / "final.png"
+    return send_file(f, conditional=True) if f.exists() else abort(404)
 
 
 def run_server(host: str = "127.0.0.1", port: int = 5000) -> None:

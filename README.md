@@ -28,6 +28,7 @@ It works **two ways**, and you can mix them per video:
 - **AI voiceover** (OpenAI `gpt-4o-mini-tts`, or clone your own voice via fal.ai/ElevenLabs) with a tunable, punchy delivery.
 - **Script writer: OpenAI or Claude** — pick either from the dashboard's Settings page.
 - **In-dashboard Settings page** — add/rotate all API keys from a form, no `.env` editing needed.
+- **Ad planner** — describe any physical product and the dashboard writes a messaging brief + a DIY photo shot list (via Claude), draws a setup diagram for each shot, then assembles the final ad once you upload your own photos.
 - **Word-by-word karaoke captions** auto-aligned with `faster-whisper`.
 - **Music bed** with automatic ducking under the voice.
 - **Optional watermark** (your logo + disclaimer) and an **optional branded outro / end card**.

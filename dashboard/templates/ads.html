@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block subtitle %}ad planner{% endblock %}
+{% block body %}
+<style>
+  .panel{background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px;margin-bottom:22px}
+  h2{font-family:'Sora';font-size:20px;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600}
+  input[type=text],textarea,select{width:100%;background:#0c1118;border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;color:var(--text);padding:13px;font-size:15px;font-family:inherit}
+  textarea{resize:vertical;line-height:1.4}
+  .field{margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .spin{display:inline-block;width:16px;height:16px;border:3px solid rgba(255,255,255,.2);
+    border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;vertical-align:middle}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+  .status{font-size:13px;margin-top:12px}
+  .status.err{color:#f87171}
+  .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .card{background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px;text-decoration:none;color:var(--text);display:block}
+  .card:hover{border-color:rgba(245,166,35,.4)}
+  .card .name{font-weight:700;font-size:15px}
+  .card .hook{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.4}
+  .card .badge{display:inline-block;margin-top:10px;font-size:11px;color:var(--accent);font-weight:700}
+</style>
+
+<div class="panel">
+  <h2>Plan a new ad</h2>
+  <div class="sub">Describe the product — the planner writes the messaging brief and a DIY shot list, then draws a setup diagram for each shot.</div>
+  <div class="field">
+    <label>Product description</label>
+    <textarea id="description" rows="3" placeholder="e.g. Black foam wedge stand for tablets/phones, props the device up hands-free at an angle. Has 3 mesh pockets on the back for a phone, charger, and cables. About 20-22cm."></textarea>
+  </div>
+  <div class="grid2">
+    <div class="field">
+      <label>Audience for this ad</label>
+      <input type="text" id="audience" placeholder="e.g. people who read/watch in bed or on the couch">
+    </div>
+    <div class="field">
+      <label>Platform</label>
+      <select id="platform">
+        <option value="Instagram/Facebook feed (4:5)">Instagram/Facebook feed (4:5)</option>
+        <option value="Square post (1:1)">Square post (1:1)</option>
+        <option value="Story/Reel (9:16)">Story/Reel (9:16)</option>
+        <option value="Amazon/Etsy listing image (1:1)">Amazon/Etsy listing image</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn" id="planBtn" type="button">Plan the ad</button>
+  <span id="planSpin" class="hidden"><span class="spin"></span> writing brief + drawing shot diagrams… this can take a minute</span>
+  <div class="status" id="planStatus"></div>
+</div>
+
+<h2 style="margin-bottom:14px">Your ads</h2>
+{% if not ads %}
+<p style="color:var(--muted)">No ads yet — plan your first one above.</p>
+{% endif %}
+<div class="list">
+  {% for a in ads %}
+  <a class="card" href="/ads/{{ a.slug }}">
+    <div class="name">{{ a.product_name }}</div>
+    <div class="hook">{{ a.hook }}</div>
+    {% if a.has_final %}<div class="badge">Final ad ready</div>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+<script>
+document.getElementById('planBtn').addEventListener('click', async () => {
+  const description = document.getElementById('description').value.trim();
+  const status = document.getElementById('planStatus');
+  if (!description) { status.textContent = 'Describe the product first.'; status.className = 'status err'; return; }
+  document.getElementById('planSpin').classList.remove('hidden');
+  status.textContent = '';
+  const r = await fetch('/api/ads/plan', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({description, audience: document.getElementById('audience').value,
+                          platform: document.getElementById('platform').value})});
+  const j = await r.json();
+  if (!r.ok) { document.getElementById('planSpin').classList.add('hidden'); status.textContent = j.error || 'failed'; status.className = 'status err'; return; }
+  pollPlanJob(j.job);
+});
+async function pollPlanJob(job) {
+  const r = await fetch('/api/job/' + job);
+  const j = await r.json();
+  if (j.stage === 'done') { window.location = '/ads/' + j.slug; return; }
+  if (j.stage === 'error') {
+    document.getElementById('planSpin').classList.add('hidden');
+    const status = document.getElementById('planStatus');
+    status.textContent = 'Failed: ' + j.error; status.className = 'status err';
+    return;
+  }
+  setTimeout(() => pollPlanJob(job), 1500);
+}
+</script>
+{% endblock %}

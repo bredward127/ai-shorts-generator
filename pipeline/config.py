@@ -28,6 +28,9 @@ OUTPUT = ROOT / "output"
 DATA = ROOT / "data"
 
 # --- Clip library -----------------------------------------------------------
+# --- Ad planner --------------------------------------------------------------
+ADS_DIR = ROOT / "ads"
+
 LIBRARY = ROOT / "library"
 LIB_IMAGES = LIBRARY / "images"
 LIB_CLIPS = LIBRARY / "clips"
@@ -35,7 +38,7 @@ LIB_DB = LIBRARY / "index.db"
 INVENTORY_CSV = LIBRARY / "inventory.csv"
 
 for _d in (ASSETS, LOGO_DIR, FONT_DIR, MUSIC_DIR, BRAND_DIR, OUTRO_DIR, OUTPUT, DATA,
-           LIBRARY, LIB_IMAGES, LIB_CLIPS):
+           LIBRARY, LIB_IMAGES, LIB_CLIPS, ADS_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 

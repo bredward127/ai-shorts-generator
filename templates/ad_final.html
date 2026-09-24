@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:{{ w }}px;height:{{ h }}px;overflow:hidden}
+  body{background:#F6F1E7;font-family:'Work Sans',sans-serif;color:#1C1815;
+       display:flex;flex-direction:column}
+  .hdr{padding:56px 64px 0 64px;display:flex;flex-direction:column;gap:14px}
+  .eyebrow{font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:{{ accent }}}
+  h1{font-family:'Fraunces',serif;font-weight:700;font-size:{{ headline_size }}px;line-height:1.05;
+     letter-spacing:-.01em;max-width:82%}
+  .subhead{font-size:18px;line-height:1.5;color:#4A443C;max-width:78%}
+  .imgs{display:flex;gap:22px;padding:34px 64px 0 64px}
+  .imgbox{flex:1;position:relative;border-radius:20px;overflow:hidden;height:{{ img_h }}px;background:#E4DCCC}
+  .imgbox img{width:100%;height:100%;object-fit:cover;display:block}
+  .badge{position:absolute;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:700;
+         box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .badge.dark{left:18px;bottom:18px;background:rgba(28,24,21,.82);color:#F6F1E7;font-weight:600}
+  .badge.accent{right:18px;top:18px;background:{{ accent }};color:#1C1815}
+  .strip{display:flex;gap:14px;padding:28px 64px 0 64px}
+  .chip{flex:1;background:#EFE8DB;border-radius:14px;padding:16px 18px}
+  .chip .val{font-size:14.5px;font-weight:700}
+  .cta{margin-top:auto;padding:28px 64px 44px 64px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .cta .name{font-family:'Fraunces',serif;font-weight:600;font-size:20px}
+  .cta .line{font-size:13.5px;color:#5A5349;margin-top:2px}
+  .cta button{border:none;background:{{ accent }};color:#1C1815;font-weight:700;font-size:16px;
+              padding:16px 30px;border-radius:999px;font-family:'Work Sans',sans-serif}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  {% if eyebrow %}<div class="eyebrow">{{ eyebrow }}</div>{% endif %}
+  <h1>{{ hook }}</h1>
+  <div class="subhead">{{ problem }}</div>
+</div>
+
+<div class="imgs">
+  {% for img in images %}
+  <div class="imgbox">
+    <img src="{{ img.src }}" alt="{{ img.alt }}">
+    {% if img.badge %}<div class="badge {{ img.badge_style|default('dark') }}">{{ img.badge }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="strip">
+  {% for vp in value_props %}
+  <div class="chip"><div class="val">{{ vp }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="cta">
+  <div>
+    <div class="name">{{ product_name }}</div>
+    {% if support_line %}<div class="line">{{ support_line }}</div>{% endif %}
+  </div>
+  <button>{{ cta }}</button>
+</div>
+
+</body>
+</html>

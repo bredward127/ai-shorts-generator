@@ -108,6 +108,22 @@ app. To stop it on purpose, click into the terminal window and press
 3. Once it's done, find it under **Videos** on the home page to preview,
    grab captions/hashtags, and download the MP4.
 
+## Advertising a product (the Ad Planner)
+
+Separate from the video pipeline, this dashboard also has an **Ads** tab that
+writes ad copy and a photo shot list for anything you want to sell:
+
+1. Add your **Anthropic API key** in Settings (Script writer section) — the ad
+   planner uses Claude to write the messaging brief and shot list.
+2. Click **Ads** in the nav bar, describe the product, pick an audience and
+   platform, click **Plan the ad**. You'll get a messaging brief and 2-4 shots,
+   each with a labeled diagram showing camera angle, framing, and lighting —
+   made for someone who isn't a photographer.
+3. Take the photos it asks for (or upload one composite/collage photo and it's
+   split into individual shots automatically), upload them on the ad's page,
+   pick 1-3 in order (first = hero image), click **Assemble the ad**.
+4. Download the finished ad PNG.
+
 ## Coming back later
 
 Every time you want to use it again:

@@ -10,3 +10,4 @@ flask>=3.0
 fal-client>=0.5
 requests>=2.31
 pillow>=10.0
+numpy>=1.24
