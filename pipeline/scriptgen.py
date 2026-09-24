@@ -67,18 +67,9 @@ def _load_system_prompt() -> str:
     return (config.PROMPTS / "scriptgen_system.md").read_text(encoding="utf-8")
 
 
-def generate(topic: str = "", instruction: str = "") -> Script:
-    auto = not (topic or "").strip()
-    step(f"Scriptgen — {'(auto topic)' if auto else topic!r}")
-    if not config.OPENAI_API_KEY:
-        log("no OPENAI_API_KEY — using offline sample script")
-        return _sample_script(topic or config.DEFAULT_TOPIC)
-
-    from openai import OpenAI
-
+def _build_prompts(topic: str, instruction: str, auto: bool) -> tuple[str, str]:
     from . import state
 
-    client = OpenAI(api_key=config.OPENAI_API_KEY)
     system = _load_system_prompt()
     niche = config.CONTENT_NICHE
     if niche:
@@ -100,7 +91,13 @@ def generate(topic: str = "", instruction: str = "") -> Script:
                 f"overlaps something already covered, find a new angle on it.\n\n{base}")
     if instruction:
         user += f"\n\nIMPORTANT revision note from the creator: {instruction}"
+    return system, user
 
+
+def _generate_openai(system: str, user: str) -> Script:
+    from openai import OpenAI
+
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
     kwargs = dict(
         model=config.SCRIPT_MODEL,
         messages=[{"role": "system", "content": system},
@@ -111,7 +108,44 @@ def generate(topic: str = "", instruction: str = "") -> Script:
     if not config.SCRIPT_MODEL.startswith(("gpt-5", "o1", "o3", "o4")):
         kwargs["temperature"] = 0.9
     completion = client.beta.chat.completions.parse(**kwargs)
-    script = completion.choices[0].message.parsed
+    return completion.choices[0].message.parsed
+
+
+def _generate_claude(system: str, user: str) -> Script:
+    """Same job as _generate_openai, but via the Anthropic API. Claude has no
+    built-in structured-output mode, so we hand it the Script schema as a tool
+    and force a call to it, then validate the tool input with the same
+    pydantic model."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    schema = Script.model_json_schema()
+    tool = {"name": "write_short_script", "description":
+            "Submit the finished short-form video script.", "input_schema": schema}
+    resp = client.messages.create(
+        model=config.CLAUDE_SCRIPT_MODEL,
+        max_tokens=4096,
+        system=system,
+        messages=[{"role": "user", "content": user}],
+        tools=[tool],
+        tool_choice={"type": "tool", "name": "write_short_script"},
+    )
+    tool_use = next(b for b in resp.content if b.type == "tool_use")
+    return Script(**tool_use.input)
+
+
+def generate(topic: str = "", instruction: str = "") -> Script:
+    auto = not (topic or "").strip()
+    step(f"Scriptgen — {'(auto topic)' if auto else topic!r}")
+
+    use_claude = config.LLM_PROVIDER == "claude" and config.ANTHROPIC_API_KEY
+    if not use_claude and not config.OPENAI_API_KEY:
+        log("no script-writer API key configured — using offline sample script")
+        return _sample_script(topic or config.DEFAULT_TOPIC)
+
+    system, user = _build_prompts(topic, instruction, auto)
+    script = _generate_claude(system, user) if use_claude else _generate_openai(system, user)
     script.slug = slugify(script.slug or topic)
-    log(f"{len(script.scenes)} scenes · slug={script.slug}")
+    log(f"{len(script.scenes)} scenes · slug={script.slug} · provider="
+        f"{'claude' if use_claude else 'openai'}")
     return script

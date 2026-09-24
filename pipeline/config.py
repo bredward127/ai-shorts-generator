@@ -103,9 +103,22 @@ SCRIPT_PROMPT = os.getenv("SCRIPT_PROMPT", "").strip()
 
 # --- Models / APIs ----------------------------------------------------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 FAL_KEY = os.getenv("FAL_KEY", "")
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")   # free at pexels.com/api
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "") # free at pixabay.com/api
+
+# Script writer: "openai" (default) or "claude". Claude only covers scriptgen —
+# voiceover and clip-matching embeddings have no Claude equivalent and stay on
+# their own providers below.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
+CLAUDE_SCRIPT_MODEL = os.getenv("CLAUDE_SCRIPT_MODEL", "claude-sonnet-5")
+
+# Voiceover: "openai" (stock TTS voices) or "elevenlabs" (supports voice cloning).
+TTS_PROVIDER = os.getenv("TTS_PROVIDER", "openai").strip().lower()
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
 # Length each library clip is trimmed to (stitch-time stretches to the scene).
 LIB_CLIP_SECONDS = 5.0

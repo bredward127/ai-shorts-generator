@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block subtitle %}settings{% endblock %}
+{% block body %}
+<style>
+  .panel{background:var(--surface);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px;margin-bottom:20px}
+  h2{font-family:'Sora';font-size:20px;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600}
+  input[type=text],input[type=password],select{width:100%;background:#0c1118;border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;color:var(--text);padding:13px;font-size:15px;font-family:inherit}
+  .field{margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .hint a{color:var(--accent);text-decoration:underline}
+  .toggle{position:absolute;right:12px;top:38px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px}
+  .relwrap{position:relative}
+  .status{font-size:13px;margin-top:14px;min-height:18px}
+  .status.ok{color:#4ade80}
+  .status.err{color:#f87171}
+  .dropzone{border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:22px;text-align:center;
+    color:var(--muted);cursor:pointer}
+  .dropzone.drag{border-color:var(--accent);color:var(--text)}
+</style>
+
+<h2>Settings</h2>
+<p class="sub">API keys are saved to a local <code>.env</code> file on this machine only — never sent anywhere else.</p>
+
+<div class="panel">
+  <h2>Script writer</h2>
+  <div class="sub">Which AI writes the video script.</div>
+  <div class="grid2">
+    <div class="field">
+      <label>Provider</label>
+      <select id="LLM_PROVIDER">
+        <option value="openai">OpenAI</option>
+        <option value="claude">Claude (Anthropic)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Claude model</label>
+      <input type="text" id="CLAUDE_SCRIPT_MODEL" placeholder="claude-sonnet-5">
+    </div>
+  </div>
+  <div class="field relwrap">
+    <label>Anthropic API key</label>
+    <input type="password" id="ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+    <button type="button" class="toggle" data-for="ANTHROPIC_API_KEY">show</button>
+    <div class="hint">Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a></div>
+  </div>
+  <div class="field relwrap">
+    <label>OpenAI API key</label>
+    <input type="password" id="OPENAI_API_KEY" placeholder="sk-...">
+    <button type="button" class="toggle" data-for="OPENAI_API_KEY">show</button>
+    <div class="hint">Also used for clip-matching + (if selected below) voiceover. Get one at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Voiceover</h2>
+  <div class="sub">Pick a stock voice, or clone your own below.</div>
+  <div class="grid2">
+    <div class="field">
+      <label>Provider</label>
+      <select id="TTS_PROVIDER">
+        <option value="openai">OpenAI (stock voices)</option>
+        <option value="elevenlabs">ElevenLabs (cloned/custom voice)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>OpenAI voice</label>
+      <select id="TTS_VOICE">
+        {% for v in ["onyx","ash","sage","alloy","echo","nova","shimmer","coral","ballad","verse"] %}
+        <option value="{{ v }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="field relwrap">
+    <label>ElevenLabs API key</label>
+    <input type="password" id="ELEVENLABS_API_KEY" placeholder="...">
+    <button type="button" class="toggle" data-for="ELEVENLABS_API_KEY">show</button>
+    <div class="hint">Get one at <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io/app/settings/api-keys</a></div>
+  </div>
+  <div class="field">
+    <label>Active ElevenLabs voice ID</label>
+    <input type="text" id="ELEVENLABS_VOICE_ID" placeholder="filled in automatically once you clone a voice below">
+  </div>
+
+  <div class="field" style="margin-top:22px">
+    <label>Clone your own voice</label>
+    <div class="dropzone" id="dropzone">
+      Drop a clear audio recording of the voice here (mp3/wav/m4a, 1–5 minutes, minimal background noise), or click to choose a file.
+      <input type="file" id="voiceFile" accept=".mp3,.wav,.m4a,.ogg,.flac" style="display:none">
+    </div>
+    <div class="row" style="display:flex;gap:12px;margin-top:12px">
+      <input type="text" id="voiceName" placeholder="Voice name (e.g. My Voice)" style="flex:1">
+      <button class="btn" id="cloneBtn" type="button">Clone voice</button>
+    </div>
+    <div class="status" id="cloneStatus"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Visuals &amp; stock footage</h2>
+  <div class="grid2">
+    <div class="field relwrap">
+      <label>fal.ai key (AI images/motion)</label>
+      <input type="password" id="FAL_KEY" placeholder="...">
+      <button type="button" class="toggle" data-for="FAL_KEY">show</button>
+    </div>
+    <div class="field relwrap">
+      <label>Pexels key (free stock footage)</label>
+      <input type="password" id="PEXELS_API_KEY" placeholder="...">
+      <button type="button" class="toggle" data-for="PEXELS_API_KEY">show</button>
+    </div>
+  </div>
+  <div class="field relwrap">
+    <label>Pixabay key (optional, second free stock source)</label>
+    <input type="password" id="PIXABAY_API_KEY" placeholder="...">
+    <button type="button" class="toggle" data-for="PIXABAY_API_KEY">show</button>
+  </div>
+</div>
+
+<button class="btn" id="saveBtn" type="button">Save settings</button>
+<div class="status" id="saveStatus"></div>
+
+<script>
+const values = {{ values | tojson }};
+const KEYS = Object.keys(values);
+for (const k of KEYS) {
+  const el = document.getElementById(k);
+  if (el) el.value = values[k] || "";
+}
+
+document.querySelectorAll(".toggle").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const input = document.getElementById(btn.dataset.for);
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.textContent = show ? "hide" : "show";
+  });
+});
+
+async function saveSettings(partial) {
+  const body = {};
+  for (const k of KEYS) {
+    const el = document.getElementById(k);
+    if (el) body[k] = el.value;
+  }
+  Object.assign(body, partial || {});
+  const r = await fetch("/api/settings", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body)});
+  return r.json();
+}
+
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const status = document.getElementById("saveStatus");
+  status.textContent = "Saving…"; status.className = "status";
+  try {
+    await saveSettings();
+    status.textContent = "Saved."; status.className = "status ok";
+  } catch (e) {
+    status.textContent = "Failed to save: " + e; status.className = "status err";
+  }
+});
+
+const dropzone = document.getElementById("dropzone");
+const voiceFile = document.getElementById("voiceFile");
+let chosenFile = null;
+dropzone.addEventListener("click", () => voiceFile.click());
+voiceFile.addEventListener("change", () => { chosenFile = voiceFile.files[0]; markChosen(); });
+["dragover","dragleave","drop"].forEach(ev => dropzone.addEventListener(ev, e => {
+  e.preventDefault();
+  dropzone.classList.toggle("drag", ev === "dragover");
+  if (ev === "drop" && e.dataTransfer.files.length) { chosenFile = e.dataTransfer.files[0]; markChosen(); }
+}));
+function markChosen() {
+  dropzone.textContent = chosenFile ? ("Selected: " + chosenFile.name) : dropzone.textContent;
+}
+
+document.getElementById("cloneBtn").addEventListener("click", async () => {
+  const status = document.getElementById("cloneStatus");
+  if (!chosenFile) { status.textContent = "Choose an audio file first."; status.className = "status err"; return; }
+  const name = document.getElementById("voiceName").value || "My Voice";
+  status.textContent = "Cloning voice… this can take a minute."; status.className = "status";
+  const fd = new FormData();
+  fd.append("name", name);
+  fd.append("files", chosenFile);
+  try {
+    const r = await fetch("/api/voice/clone", {method: "POST", body: fd});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "clone failed");
+    document.getElementById("ELEVENLABS_VOICE_ID").value = j.voice_id;
+    document.getElementById("TTS_PROVIDER").value = "elevenlabs";
+    status.textContent = "Voice cloned and set as active."; status.className = "status ok";
+  } catch (e) {
+    status.textContent = "Failed: " + e.message; status.className = "status err";
+  }
+});
+</script>
+{% endblock %}

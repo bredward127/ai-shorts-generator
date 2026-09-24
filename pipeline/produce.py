@@ -101,8 +101,9 @@ def make(topic: str | None, script: Script | None = None, on_stage=None,
     audio_info = voice.synthesize(video.audio_dir, script)
     if on_stage:
         on_stage("assembling")
+    have_narration = bool(voice._ready())
     final = assemble(video, script, images, audio_info,
-                     motion_clips=motion, want_captions=bool(config.OPENAI_API_KEY))
+                     motion_clips=motion, want_captions=have_narration)
 
     video.mark("complete", final=str(final))
     state.record_video(video, topic, "complete")

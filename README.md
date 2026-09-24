@@ -25,7 +25,9 @@ It works **two ways**, and you can mix them per video:
 - **Topic → finished video**, end to end, in one command.
 - **Two visual modes:** AI generation (fal Flux + Wan) and/or free stock footage (Pexels/Pixabay).
 - **Reusable clip library** with semantic matching — reuse a good shot across videos instead of paying to regenerate it.
-- **AI voiceover** (OpenAI `gpt-4o-mini-tts`) with a tunable, punchy delivery.
+- **AI voiceover** (OpenAI `gpt-4o-mini-tts`, or ElevenLabs with your own cloned voice) with a tunable, punchy delivery.
+- **Script writer: OpenAI or Claude** — pick either from the dashboard's Settings page.
+- **In-dashboard Settings page** — add/rotate all API keys from a form, no `.env` editing needed.
 - **Word-by-word karaoke captions** auto-aligned with `faster-whisper`.
 - **Music bed** with automatic ducking under the voice.
 - **Optional watermark** (your logo + disclaimer) and an **optional branded outro / end card**.
@@ -48,6 +50,10 @@ topic ─▶ script (OpenAI, structured JSON)
 ```
 
 Each scene is a cinematic moving image; the only on-screen text is the karaoke captions, so the **voice carries the message**. Output lands in `output/{date}-{slug}/final.mp4` (1080×1920) alongside a `script.json` with all the platform copy.
+
+> 🪟 **New to the terminal / on Windows?** See [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md) for
+> complete step-by-step instructions, including how to add API keys from the
+> dashboard's **Settings** page instead of editing `.env` by hand.
 
 ## 🚀 Quickstart
 

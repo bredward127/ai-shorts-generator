@@ -14,7 +14,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
-from pipeline import config, drafts, library, scriptgen, state
+from pipeline import config, drafts, library, scriptgen, settings, state
 from pipeline.util import read_json, slugify
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -124,6 +124,52 @@ def library_page():
 @app.route("/create")
 def create_page():
     return render_template("create.html", brand=config.BRAND)
+
+
+@app.route("/settings")
+def settings_page():
+    return render_template("settings.html", brand=config.BRAND, values=settings.current())
+
+
+# ---------- settings API ----------
+@app.post("/api/settings")
+def api_settings():
+    updated = settings.save(request.get_json(force=True))
+    return jsonify({"ok": True, "updated": list(updated), "values": settings.current()})
+
+
+@app.post("/api/voice/clone")
+def api_voice_clone():
+    """Upload one or more short audio samples of a voice; ElevenLabs clones it
+    and we save the resulting voice_id + switch TTS_PROVIDER to elevenlabs."""
+    import tempfile
+
+    name = (request.form.get("name") or "My Voice").strip()
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "at least one audio sample required"}), 400
+    if not config.ELEVENLABS_API_KEY:
+        return jsonify({"error": "add your ElevenLabs API key in Settings first"}), 400
+
+    from pipeline.voice import clone_voice
+
+    with tempfile.TemporaryDirectory() as tmp:
+        paths = []
+        for f in files:
+            if not f.filename.lower().endswith(_AUDIO_EXTS):
+                continue
+            p = Path(tmp) / Path(f.filename).name
+            f.save(p)
+            paths.append(p)
+        if not paths:
+            return jsonify({"error": "audio file required (.mp3/.wav/.m4a/.ogg/.flac)"}), 400
+        try:
+            voice_id = clone_voice(name, paths)
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": str(e)}), 400
+
+    settings.save({"ELEVENLABS_VOICE_ID": voice_id, "TTS_PROVIDER": "elevenlabs"})
+    return jsonify({"ok": True, "voice_id": voice_id})
 
 
 # ---------- media ----------
